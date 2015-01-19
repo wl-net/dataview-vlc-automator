@@ -6,11 +6,11 @@ import argparse
 import logging
 import os
 import ssl
+import json
 
 import asyncio
 import aiohttp
 import aiohttp.server
-import json
 
 class DataviewVLCController():
     def pause():
@@ -93,18 +93,20 @@ def main():
 
     here = os.path.join(os.path.dirname(__file__), 'tests')
 
-    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23) # TODO python 3.4+ check
     sslcontext.load_cert_chain(args.certfile, args.keyfile)
 
     loop = asyncio.get_event_loop()
     f = loop.create_server(
-        lambda: DataviewRPCServer({'pause': lambda: DataviewVLCController.pause(),
-                                   'set_volume': lambda volume: DataviewVLCController.set_volume(volume),
-                                   'mute': lambda: DataviewVLCController.mute(),
-                                   'unmute': lambda: DataviewVLCController.unmute()
-                                  }),
+        lambda: DataviewRPCServer(
+          {'pause': lambda: DataviewVLCController.pause(),
+            'set_volume': lambda volume: DataviewVLCController.set_volume(volume),
+            'mute': lambda: DataviewVLCController.mute(),
+            'unmute': lambda: DataviewVLCController.unmute()
+          }
+        ),
         args.host, args.port,
-        ssl=sslcontext)
+        ssl = sslcontext)
     svr = loop.run_until_complete(f)
     socks = svr.sockets
     print('serving on', socks[0].getsockname())
@@ -112,7 +114,6 @@ def main():
         loop.run_forever()
     except KeyboardInterrupt:
         pass
-
 
 if __name__ == '__main__':
     main()
