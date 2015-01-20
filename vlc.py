@@ -33,6 +33,7 @@ class DataviewVLCController():
 class DataviewRPCServer(asyncio.Protocol):
     def __init__(self, dispatch_functions):
         self.dispatch_functions = dispatch_functions
+
     def connection_made(self, transport):
         peername = transport.get_extra_info('peername')
         print('Connection from {}'.format(peername))
@@ -51,12 +52,18 @@ class DataviewRPCServer(asyncio.Protocol):
 
         try:
             if payload['jsonrpc'] != '2.0':
-                self.transport.close()
+                response = {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": null}
+                self.transport.write(str.encode(json.dumps(response) + "\n"))
                 return
             response['jsonrpc'] = '2.0'
             response['id'] = payload['id']
         except Exception:
             pass
+
+        if payload['method'] not in self.dispatch_functions:
+              response = {"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": payload['id']},
+              self.transport.write(str.encode(json.dumps(response) + "\n"))
+              return
         #try:
         response['result'] = self.dispatch_functions[payload['method']](*payload['params'])
         #except Exception as e:
@@ -109,7 +116,7 @@ def main():
         ssl = sslcontext)
     svr = loop.run_until_complete(f)
     socks = svr.sockets
-    print('serving on', socks[0].getsockname())
+    print('Server started. Waiting for connections on ', socks[0].getsockname())
     try:
         loop.run_forever()
     except KeyboardInterrupt:
