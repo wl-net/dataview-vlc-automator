@@ -14,21 +14,36 @@ import aiohttp.server
 
 class DataviewVLCController():
     def pause():
-      print("Pause() called")
+      """
+      Pause the audio stream.
+      NOTE: vlc's CLI interface only allows toggle of pause and is_playing does not consider pause state
+      """
+      command = "pause"
       return True
     
     def set_volume(volume):
-      print("set_volume(): " + str(volume))
-      return "OK"
+      """
+      Sets the volume for the current player instance
+      """
+      command = "volume {}".format(int(volume))
+      
       return True
     
+    def play(url):
+      command = "enqueue {}".format(url)
+    
     def mute():
+      command = ""
       print("mute() called")
       return True
     
     def unmute():
+      command = ""
       print("unmute() called")
       return True
+    
+    def _send_to_server(command):
+      pass
 
 class DataviewRPCServer(asyncio.Protocol):
     def __init__(self, dispatch_functions):
