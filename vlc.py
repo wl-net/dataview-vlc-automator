@@ -12,6 +12,9 @@ import asyncio
 import aiohttp
 import aiohttp.server
 
+from urllib.parse import urlparse, parse_qsl
+from aiohttp.multidict import MultiDict
+
 class DataviewVLCController():
     def pause():
       """
@@ -45,16 +48,34 @@ class DataviewVLCController():
     def _send_to_server(command):
       pass
 
-class DataviewRPCServer(asyncio.Protocol):
+class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
     def __init__(self, dispatch_functions):
         self.dispatch_functions = dispatch_functions
+        super().__init__()
+
+    @asyncio.coroutine
+    def handle_request(self, message, payload):
+        print('method = {!r}; path = {!r}; version = {!r}'.format(
+        message.method, message.path, message.version))
+
+        if message.method == 'POST' and message.path == '/rpc':
+            data = yield from payload.read()
+            response = aiohttp.Response(
+                self.writer, 200, http_version=message.version
+            )
+            result = self.process_request(data)
+            response.add_header('Content-Length', str(len(result)))
+            response.send_headers()
+
+            response.write(result)
 
     def connection_made(self, transport):
         peername = transport.get_extra_info('peername')
         print('Connection from {}'.format(peername))
         self.transport = transport
+        super().connection_made(transport)
 
-    def data_received(self, data):
+    def process_request(self, data):
         response = {}
         message = data.decode()
         
@@ -62,14 +83,12 @@ class DataviewRPCServer(asyncio.Protocol):
             payload = json.loads(message)
         except Exception:
             response = {"jsonrpc": "2.0", "error": {"code": -32700, "message": "Parse error"}, "id": None}
-            self.transport.write(str.encode(json.dumps(response) + "\n"))
-            return
+            return str.encode(json.dumps(response) + "\n")
 
         try:
             if payload['jsonrpc'] != '2.0':
                 response = {"jsonrpc": "2.0", "error": {"code": -32600, "message": "Invalid Request"}, "id": null}
-                self.transport.write(str.encode(json.dumps(response) + "\n"))
-                return
+                return str.encode(json.dumps(response) + "\n")
             response['jsonrpc'] = '2.0'
             response['id'] = payload['id']
         except Exception:
@@ -77,22 +96,14 @@ class DataviewRPCServer(asyncio.Protocol):
 
         if payload['method'] not in self.dispatch_functions:
               response = {"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": payload['id']},
-              self.transport.write(str.encode(json.dumps(response) + "\n"))
-              return
+              return str.encode(json.dumps(response) + "\n")
         #try:
         response['result'] = self.dispatch_functions[payload['method']](*payload['params'])
         #except Exception as e:
         #    print(e)
         #    pass
-            
-        
-        print('Data received: {!r}'.format(message))
 
-        print('Send: {!r}'.format(json.dumps(response)))
-        self.transport.write(str.encode(json.dumps(response) + "\n"))
-
-        print('Close the client socket')
-        #self.transport.close()
+        return str.encode(json.dumps(response) + "\n")
 
 ARGS = argparse.ArgumentParser(description="Run simple http server.")
 ARGS.add_argument(
