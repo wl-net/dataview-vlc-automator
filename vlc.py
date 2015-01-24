@@ -166,7 +166,11 @@ def main():
 
     here = os.path.join(os.path.dirname(__file__), 'tests')
 
-    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23) # TODO python 3.4+ check
+    if sys.version >= '3.4':
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    else:
+        sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+
     sslcontext.load_cert_chain(args.certfile, args.keyfile)
 
     loop = asyncio.get_event_loop()
