@@ -15,6 +15,14 @@ import aiohttp.server
 from urllib.parse import urlparse, parse_qsl
 from aiohttp.multidict import MultiDict
 
+def constant_time_equals(val1, val2):
+    if len(val1) != len(val2):
+        return False
+    result = 0
+    for x, y in zip(val1, val2):
+        result |= ord(x) ^ ord(y)
+    return result == 0
+
 class DataviewVLCController():
     def pause():
       """
@@ -49,8 +57,11 @@ class DataviewVLCController():
       pass
 
 class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
-    def __init__(self, dispatch_functions):
+    def __init__(self, dispatch_functions, auth_token):
         self.dispatch_functions = dispatch_functions
+        self.auth_token = auth_token
+        if len(auth_token) < 32:
+            raise Exception("auth_token is insufficently long")
         super().__init__()
 
     @asyncio.coroutine
@@ -59,6 +70,25 @@ class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
         message.method, message.path, message.version))
 
         if message.method == 'POST' and message.path == '/rpc':
+            if not 'Authorization' in message.headers:
+                response = aiohttp.Response(
+                    self.writer, 401, http_version=message.version
+                )
+                response.add_header('Content-Length', '0')
+                response.add_header('WWW-Authenticate', 'Token')
+                response.send_headers()
+                return
+
+            authorization = message.headers.get('Authorization').split(' ')
+            if authorization[0] != 'Token' or not constant_time_equals(authorization[1], 'aaaa'):
+                response = aiohttp.Response(
+                    self.writer, 403, http_version=message.version
+                )
+                response.add_header('Content-Length', '0')
+                response.send_headers()
+                return
+
+            # authorization passed, process the request.
             data = yield from payload.read()
             response = aiohttp.Response(
                 self.writer, 200, http_version=message.version
@@ -68,6 +98,12 @@ class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
             response.send_headers()
 
             response.write(result)
+        else:
+            response = aiohttp.Response(
+                self.writer, 405, http_version=message.version
+            )
+            response.add_header('Accept', 'POST')
+            response.send_headers()
 
     def connection_made(self, transport):
         peername = transport.get_extra_info('peername')
@@ -98,7 +134,11 @@ class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
               response = {"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": payload['id']},
               return str.encode(json.dumps(response) + "\n")
         #try:
-        response['result'] = self.dispatch_functions[payload['method']](*payload['params'])
+        if type(payload['params']) is dict:
+            response['result'] = self.dispatch_functions[payload['method']](**payload['params'])
+        else:
+            response['result'] = self.dispatch_functions[payload['method']](*payload['params'])
+
         #except Exception as e:
         #    print(e)
         #    pass
@@ -136,7 +176,7 @@ def main():
             'set_volume': lambda volume: DataviewVLCController.set_volume(volume),
             'mute': lambda: DataviewVLCController.mute(),
             'unmute': lambda: DataviewVLCController.unmute()
-          }
+          }, os.environ.get('RPCSERVER_TOKEN')
         ),
         args.host, args.port,
         ssl = sslcontext)
