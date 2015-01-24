@@ -1,5 +1,5 @@
-# dataview-vlc-automator
-Dataview controller for VLC
+# Dataview VLC Automator
+This project includes a Dataview automator for VLC. This component is intended to be run on a separate machine and allows dataview to communicate with VLC securely.
 
 ## Generating a X.509 Server Certificate
 
