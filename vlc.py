@@ -23,6 +23,8 @@ def constant_time_equals(val1, val2):
         result |= ord(x) ^ ord(y)
     return result == 0
 
+import requests
+
 class DataviewVLCController():
     def pause():
       """
@@ -53,6 +55,12 @@ class DataviewVLCController():
       print("unmute() called")
       return True
     
+    def get_playback_information():
+        r = requests.get('http://localhost:8080/requests/status.json', auth=('', 'wlnet'))
+        information = json.loads(r.text)['information']
+
+        return {'current': {'genre': information['category']['meta']['genre'], 'title': information['category']['meta']['title'], 'song': information['category']['meta']['now_playing'], }, }
+
     def _send_to_server(command):
       pass
 
@@ -80,7 +88,7 @@ class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
                 return
 
             authorization = message.headers.get('Authorization').split(' ')
-            if authorization[0] != 'Token' or not constant_time_equals(authorization[1], 'aaaa'):
+            if authorization[0] != 'Token' or not constant_time_equals(authorization[1], self.auth_token):
                 response = aiohttp.Response(
                     self.writer, 403, http_version=message.version
                 )
@@ -179,7 +187,8 @@ def main():
           {'pause': lambda: DataviewVLCController.pause(),
             'set_volume': lambda volume: DataviewVLCController.set_volume(volume),
             'mute': lambda: DataviewVLCController.mute(),
-            'unmute': lambda: DataviewVLCController.unmute()
+            'unmute': lambda: DataviewVLCController.unmute(),
+            'get_playback_information': lambda: DataviewVLCController.get_playback_information(),
           }, os.environ.get('RPCSERVER_TOKEN')
         ),
         args.host, args.port,
