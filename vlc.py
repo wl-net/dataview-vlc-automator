@@ -148,7 +148,7 @@ class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
 ARGS = argparse.ArgumentParser(description="Run simple http server.")
 ARGS.add_argument(
     '--host', action="store", dest='host',
-    default='127.0.0.1', help='Host name')
+    default='localhost', help='Host name')
 ARGS.add_argument(
     '--port', action="store", dest='port',
     default=8080, type=int, help='Port number')
