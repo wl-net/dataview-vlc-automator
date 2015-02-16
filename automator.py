@@ -23,8 +23,8 @@ def constant_time_equals(val1, val2):
         result |= ord(x) ^ ord(y)
     return result == 0
 
-import requests
 import vlc
+
 class DataviewVLCController():
     def __init__(self):
       self.instance = vlc.Instance()
@@ -66,10 +66,8 @@ class DataviewVLCController():
       return True
 
     def get_playback_information(self):
-        r = requests.get('http://localhost:8080/requests/status.json', auth=('', 'wlnet'))
-        information = json.loads(r.text)['information']
-
-        return {'current': {'genre': information['category']['meta']['genre'], 'title': information['category']['meta']['title'], 'song': information['category']['meta']['now_playing'], }, }
+        m = self.mp.get_media()
+        return {'current': {'genre': m.get_meta(vlc.Meta.Genre), 'title':m.get_meta(vlc.Meta.Title), 'song': m.get_meta(vlc.Meta.NowPlaying), }, }
 
     def _send_to_server(command):
       pass
