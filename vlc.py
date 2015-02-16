@@ -24,8 +24,13 @@ def constant_time_equals(val1, val2):
     return result == 0
 
 import requests
-
+import vlc
 class DataviewVLCController():
+    def __init__():
+      self.vlc = vlc.Instance()
+      self.mlp = vlc.MediaListPlayer()
+      self.volume = 50
+
     def pause():
       """
       Pause the audio stream.
@@ -38,12 +43,13 @@ class DataviewVLCController():
       """
       Sets the volume for the current player instance
       """
-      command = "volume {}".format(int(volume))
+      self.volume = int(volume)
       
       return True
     
     def play(url):
-      command = "enqueue {}".format(url)
+      m = self.vlc.Media(url)
+      self.mlp.play_item(m)
     
     def mute():
       command = ""
