@@ -26,42 +26,46 @@ def constant_time_equals(val1, val2):
 import requests
 import vlc
 class DataviewVLCController():
-    def __init__():
-      self.vlc = vlc.Instance()
-      self.mlp = vlc.MediaListPlayer()
-      self.volume = 50
+    def __init__(self):
+      self.instance = vlc.Instance()
+      self.mp = self.instance.media_player_new()
+      self.ml = self.instance.media_list_new()
+      self.mlp = self.instance.media_list_player_new()
+      self.mlp.set_media_player(self.mp)
+      self.mlp.set_media_list(self.ml)
+      self.volume = 75
+      self.mp.audio_set_volume(self.volume)
 
-    def pause():
+    def pause(self):
       """
       Pause the audio stream.
-      NOTE: vlc's CLI interface only allows toggle of pause and is_playing does not consider pause state
       """
-      command = "pause"
+      self.mp.pause()
       return True
-    
-    def set_volume(volume):
+
+    def set_volume(self, volume):
       """
       Sets the volume for the current player instance
       """
       self.volume = int(volume)
-      
+      self.mp.audio_set_volume(self.volume)
+
       return True
-    
-    def play(url):
-      m = self.vlc.Media(url)
+
+    def play(self, url):
+      m = vlc.Media(url)
+      self.ml.add_media(m)
       self.mlp.play_item(m)
-    
-    def mute():
-      command = ""
-      print("mute() called")
+
+    def mute(self):
+      self.mp.audio_set_mute(True)
       return True
-    
-    def unmute():
-      command = ""
-      print("unmute() called")
+
+    def unmute(self):
+      self.mp.audio_set_mute(False)
       return True
-    
-    def get_playback_information():
+
+    def get_playback_information(self):
         r = requests.get('http://localhost:8080/requests/status.json', auth=('', 'wlnet'))
         information = json.loads(r.text)['information']
 
@@ -188,13 +192,15 @@ def main():
     sslcontext.load_cert_chain(args.certfile, args.keyfile)
 
     loop = asyncio.get_event_loop()
+    c = DataviewVLCController();
     f = loop.create_server(
         lambda: DataviewRPCServer(
-          {'pause': lambda: DataviewVLCController.pause(),
-            'set_volume': lambda volume: DataviewVLCController.set_volume(volume),
-            'mute': lambda: DataviewVLCController.mute(),
-            'unmute': lambda: DataviewVLCController.unmute(),
-            'get_playback_information': lambda: DataviewVLCController.get_playback_information(),
+          {'pause': lambda: c.pause(),
+            'play': lambda url: c.play(url),
+            'set_volume': lambda volume: c.set_volume(volume),
+            'mute': lambda: c.mute(),
+            'unmute': lambda: c.unmute(),
+            'get_playback_information': lambda: c.get_playback_information(),
           }, os.environ.get('RPCSERVER_TOKEN')
         ),
         args.host, args.port,
