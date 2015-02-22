@@ -30,5 +30,5 @@ export RPCSERVER_TOKEN='GENERATED_TOKEN'
 Be sure that you have generated the X.509 Server Certificate and exported the RPCSERVER_TOKEN environment variable, then:
 
 <pre>
-$ python3 vlc.py --tlscert cert.pem --tlskey server.pem
+$ python3 automator.py --tlscert cert.pem --tlskey server.pem
 </pre>
