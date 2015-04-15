@@ -33,7 +33,7 @@ class DataviewVLCController():
       self.mlp = self.instance.media_list_player_new()
       self.mlp.set_media_player(self.mp)
       self.mlp.set_media_list(self.ml)
-      self.volume = 75
+      self.volume = 50
       self.mp.audio_set_volume(self.volume)
 
     def pause(self):
@@ -54,8 +54,11 @@ class DataviewVLCController():
 
     def play(self, url):
       m = vlc.Media(url)
-      self.ml.add_media(m)
-      self.mlp.play_item(m)
+
+      if self.mp.get_media() is None or self.mp.get_media().get_mrl() != m.get_mrl():
+          self.ml.add_media(m)
+          self.mlp.play_item(m)
+          self.mp.audio_set_volume(self.volume)
 
     def mute(self):
       self.mp.audio_set_mute(True)
