@@ -66,10 +66,10 @@ class DataviewVLCController():
       return True
 
     def get_playback_information(self):
-        if self.mp == None:
-            return {}
         m = self.mp.get_media()
-        return {'current': {'genre': m.get_meta(vlc.Meta.Genre), 'title':m.get_meta(vlc.Meta.Title), 'song': m.get_meta(vlc.Meta.NowPlaying), }}
+        if m is None:
+          return {}
+        return {'current': {'genre': m.get_meta(vlc.Meta.Genre), 'title': m.get_meta(vlc.Meta.Title), 'song': m.get_meta(vlc.Meta.NowPlaying)}}
 
     def _send_to_server(command):
       pass
