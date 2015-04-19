@@ -40,7 +40,14 @@ class DataviewVLCController():
       """
       Pause the audio stream.
       """
-      self.mp.pause()
+      self.mp.set_pause(1)
+      return True
+
+    def unpause(self):
+      """
+      Unpause the audio stream.
+      """
+      self.mp.set_pause(0)
       return True
 
     def set_volume(self, volume):
