@@ -1,5 +1,5 @@
 # Dataview VLC Automator
-This project includes a Dataview automator for VLC. This component is intended to be run on a separate machine and allows dataview to communicate with VLC securely.
+This project includes a Dataview automator for VLC. This component is intended to be run on a separate machine and allows dataview to communicate with VLC securely. When coupled with [WLNet Audio](http://docs.infrastructure.wl-net.net/services/audio), this automator works well as a whole-home media player.
 
 ## Generating a X.509 Server Certificate
 
