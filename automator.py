@@ -67,6 +67,12 @@ class DataviewVLCController():
           self.mlp.play_item(m)
           self.mp.audio_set_volume(self.volume)
 
+      # hack to set the default volume
+      while True:
+          if self.mp.audio_get_volume() is not -1:
+              self.mp.audio_set_volume(self.volume)
+              return True
+
     def mute(self):
       self.mp.audio_set_mute(True)
       return True
