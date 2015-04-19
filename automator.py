@@ -206,6 +206,7 @@ def main():
     f = loop.create_server(
         lambda: DataviewRPCServer(
           {'pause': lambda: c.pause(),
+            'unpause': lambda: c.unpause(),
             'play': lambda url: c.play(url),
             'set_volume': lambda volume: c.set_volume(volume),
             'mute': lambda: c.mute(),
