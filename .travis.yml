@@ -4,6 +4,7 @@ python:
 
 install: 
   -  pip install -r requirements.txt
+  -  openssl genrsa -out server.pem 4096
 
 script:
-  -  python automator.py
+  -  export RPCSERVER_TOKEN=`openssl rand -hex 32` python automator.py
