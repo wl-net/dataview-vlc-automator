@@ -3,10 +3,10 @@ import sys
 assert sys.version >= '3.3', 'Please use Python 3.3 or higher.'
 
 import argparse
-import logging
 import os
 import ssl
 import json
+from threading import Timer
 
 import asyncio
 import aiohttp
@@ -14,6 +14,7 @@ import aiohttp.server
 
 from urllib.parse import urlparse, parse_qsl
 from aiohttp.multidict import MultiDict
+
 
 def constant_time_equals(val1, val2):
     if len(val1) != len(val2):
@@ -25,6 +26,7 @@ def constant_time_equals(val1, val2):
 
 import vlc
 
+
 class DataviewVLCController():
     def __init__(self):
       self.instance = vlc.Instance()
@@ -35,6 +37,22 @@ class DataviewVLCController():
       self.mlp.set_media_list(self.ml)
       self.volume = 50
       self.mp.audio_set_volume(self.volume)
+      self.timer = Timer(5.0, self.timer_callbacks)
+
+    def start_timers(self):
+        self.timer.start()
+
+    def stop_timers(self):
+        self.timer.cancel()
+
+    def timer_callbacks(self):
+        self.resume_playing()
+
+    def resume_playing(self):
+        """
+        Resume playing if the source dropped
+        @return:
+        """
 
     def pause(self):
       """
@@ -67,6 +85,8 @@ class DataviewVLCController():
           self.mlp.play_item(m)
           self.mp.audio_set_volume(self.volume)
 
+      self.start_timers()
+
       # hack to set the default volume
       while True:
           if self.mp.audio_get_volume() is not -1:
@@ -85,10 +105,14 @@ class DataviewVLCController():
         m = self.mp.get_media()
         if m is None:
           return {}
-        return {'current': {'genre': m.get_meta(vlc.Meta.Genre), 'title': m.get_meta(vlc.Meta.Title), 'song': m.get_meta(vlc.Meta.NowPlaying)}}
+        return {'current': {'genre': m.get_meta(vlc.Meta.Genre),
+                            'title': m.get_meta(vlc.Meta.Title),
+                            'song': m.get_meta(vlc.Meta.NowPlaying)},
+                'previous': []}
 
     def _send_to_server(command):
       pass
+
 
 class DataviewRPCServer(aiohttp.server.ServerHttpProtocol):
     def __init__(self, dispatch_functions, auth_token):
