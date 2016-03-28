@@ -54,7 +54,7 @@ class DataviewVLCController(object):
       self.previously_played = []
 
     def start_timers(self):
-        if not self.monitor.is_alive():
+        if not self.monitor.is_alive() and not self.monitor_stop_flag.is_set():
             self.monitor.start()
 
     def stop_timers(self):
