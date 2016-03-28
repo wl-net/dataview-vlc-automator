@@ -6,7 +6,7 @@ import argparse
 import os
 import ssl
 import json
-from threading import Thread, Timer
+from threading import Event, Thread, Timer
 
 import asyncio
 import aiohttp
@@ -49,22 +49,35 @@ class DataviewVLCController(object):
       self.volume = 50
       self.mp.audio_set_volume(self.volume)
       self.monitor_stop_flag = Event()
-      self.monitor = MonitorThread(stopFlag)
+      self.monitor = MonitorThread(self.monitor_stop_flag, self)
+      self.url = None
+      self.previously_played = []
 
     def start_timers(self):
-        self.monitor.start()
+        if not self.monitor.is_alive():
+            self.monitor.start()
 
     def stop_timers(self):
         self.monitor_stop_flag.set()
 
     def timer_callbacks(self):
         self.resume_playing()
+        self.update_previous()
 
     def resume_playing(self):
         """
         Resume playing if the source dropped
         @return:
         """
+        if not self.mp.get_media():
+           self.play(self.url)
+
+    def update_previous(self):
+        if len(self.previously_played) >= 10:
+            del self.previously_layed[0]
+
+        if len(self.previously_played) == 0 or self.get_playback_details() != self.previously_played[-1]:
+            self.previously_played.append(self.get_playback_details())
 
     def pause(self):
       """
@@ -90,6 +103,7 @@ class DataviewVLCController(object):
       return True
 
     def play(self, url):
+      self.url = url
       m = vlc.Media(url)
 
       if self.mp.get_media() is None or self.mp.get_media().get_mrl() != m.get_mrl():
@@ -114,13 +128,18 @@ class DataviewVLCController(object):
       return True
 
     def get_playback_information(self):
-        m = self.mp.get_media()
-        if m is None:
-          return {}
-        return {'current': {'genre': m.get_meta(vlc.Meta.Genre),
-                            'title': m.get_meta(vlc.Meta.Title),
-                            'song': m.get_meta(vlc.Meta.NowPlaying)},
-                'previous': []}
+        return {'current': self.get_playback_details(),
+                'previous': self.previously_played}
+
+    def get_playback_details(self):
+         m = self.mp.get_media()
+         if m is None:
+             return {}
+
+         return {'genre': m.get_meta(vlc.Meta.Genre),
+                 'title': m.get_meta(vlc.Meta.Title),
+                 'song': m.get_meta(vlc.Meta.NowPlaying)}
+
 
     def _send_to_server(command):
       pass
