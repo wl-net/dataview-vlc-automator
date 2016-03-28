@@ -6,7 +6,7 @@ import argparse
 import os
 import ssl
 import json
-from threading import Timer
+from threading import Thread, Timer
 
 import asyncio
 import aiohttp
@@ -27,7 +27,18 @@ def constant_time_equals(val1, val2):
 import vlc
 
 
-class DataviewVLCController():
+class MonitorThread(Thread):
+    def __init__(self, event, vlc_controller):
+        Thread.__init__(self)
+        self.stopped = event
+        self.vlc_controller = vlc_controller
+
+    def run(self):
+        while not self.stopped.wait(5):
+            self.vlc_controller.timer_callbacks()
+
+
+class DataviewVLCController(object):
     def __init__(self):
       self.instance = vlc.Instance()
       self.mp = self.instance.media_player_new()
@@ -37,13 +48,14 @@ class DataviewVLCController():
       self.mlp.set_media_list(self.ml)
       self.volume = 50
       self.mp.audio_set_volume(self.volume)
-      self.timer = Timer(5.0, self.timer_callbacks)
+      self.monitor_stop_flag = Event()
+      self.monitor = MonitorThread(stopFlag)
 
     def start_timers(self):
-        self.timer.start()
+        self.monitor.start()
 
     def stop_timers(self):
-        self.timer.cancel()
+        self.monitor_stop_flag.set()
 
     def timer_callbacks(self):
         self.resume_playing()
