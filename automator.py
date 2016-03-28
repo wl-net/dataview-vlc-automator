@@ -76,8 +76,10 @@ class DataviewVLCController(object):
         if len(self.previously_played) >= 10:
             del self.previously_layed[0]
 
-        if len(self.previously_played) == 0 or self.get_playback_details() != self.previously_played[-1]:
-            self.previously_played.append(self.get_playback_details())
+        current = self.get_playback_details()
+        if len(self.previously_played) == 0 or current != self.previously_played[-1]:
+            if current['song']:
+                self.previously_played.append(current)
 
     def pause(self):
       """
