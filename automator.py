@@ -129,7 +129,7 @@ class DataviewVLCController(object):
 
     def get_playback_information(self):
         return {'current': self.get_playback_details(),
-                'previous': self.previously_played}
+                'previous': self.previously_played[:-1]}
 
     def get_playback_details(self):
          m = self.mp.get_media()
