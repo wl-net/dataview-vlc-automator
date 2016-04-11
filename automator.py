@@ -74,7 +74,7 @@ class DataviewVLCController(object):
 
     def update_previous(self):
         if len(self.previously_played) >= 10:
-            del self.previously_layed[0]
+            del self.previously_played[0]
 
         current = self.get_playback_details()
         if len(self.previously_played) == 0 or current != self.previously_played[-1]:
