@@ -84,7 +84,7 @@ class DataviewVLCController(object):
             return n
 
         current = self.get_playback_details()
-        if len(self.previously_played) == 0 or wk(current, 'time') != wk(self.previously_played[-1], 'time'):
+        if len(self.previously_played) == 0 or current != wk(self.previously_played[-1], 'time'):
             if current['song']:
                 current['time'] = calendar.timegm(time.gmtime())
                 self.previously_played.append(current)
