@@ -6,7 +6,8 @@ import argparse
 import os
 import ssl
 import json
-from threading import Event, Thread, Timer
+from threading import Event, Thread
+import time
 
 import asyncio
 import aiohttp
@@ -79,7 +80,7 @@ class DataviewVLCController(object):
         current = self.get_playback_details()
         if len(self.previously_played) == 0 or current != self.previously_played[-1]:
             if current['song']:
-                self.previously_played.append(current)
+                self.previously_played.append(current + {'time': time.gmtime()})
 
     def pause(self):
         """
