@@ -3,6 +3,7 @@ import sys
 assert sys.version >= '3.3', 'Please use Python 3.3 or higher.'
 
 import argparse
+import calendar
 import os
 import ssl
 import json
@@ -80,7 +81,7 @@ class DataviewVLCController(object):
         current = self.get_playback_details()
         if len(self.previously_played) == 0 or current != self.previously_played[-1]:
             if current['song']:
-                current['time'] = time.gmtime()
+                current['time'] = calendar.timegm(time.gmtime())
                 self.previously_played.append(current)
 
     def pause(self):
