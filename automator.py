@@ -78,8 +78,13 @@ class DataviewVLCController(object):
         if len(self.previously_played) >= 10:
             del self.previously_played[0]
 
+        def wk(d, key):
+            n = dict(d)
+            del n[key]
+            return n
+
         current = self.get_playback_details()
-        if len(self.previously_played) == 0 or current != self.previously_played[-1]:
+        if len(self.previously_played) == 0 or wk(current, 'time') != wk(self.previously_played[-1], 'time'):
             if current['song']:
                 current['time'] = calendar.timegm(time.gmtime())
                 self.previously_played.append(current)
