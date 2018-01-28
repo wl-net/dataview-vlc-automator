@@ -71,7 +71,7 @@ class DataviewVLCController(object):
         Resume playing if the source dropped
         @return:
         """
-        if not self.mp.get_media():
+        if not self.mp.get_media() or self.mp.get_media().get_meta(vlc.Meta.NowPlaying) is None:
            self.play(self.url)
 
     def update_previous(self):
@@ -129,6 +129,14 @@ class DataviewVLCController(object):
                 self.mp.audio_set_volume(self.volume)
                 return True
 
+    def set_position(self, position):
+        """
+        Sets the position for the current player instance
+        """
+        self.mp.set_time(int(position))
+
+        return True
+
     def mute(self):
         self.mp.audio_set_mute(True)
         return True
@@ -140,7 +148,10 @@ class DataviewVLCController(object):
     def get_playback_information(self):
         return {'current': self.get_playback_details(),
                 'previous': self.previously_played[:-1],
-                'playback_information': {'volume': {'numeric': self.volume}}}
+                'playback_information': {'volume': {'numeric': self.volume},
+                                         'length': {'numeric': self.mp.get_length()},
+                                         'time': {'numeric': self.mp.get_time()},
+                                         'is_playing': self.mp.is_playing()}}
 
     def get_playback_details(self):
          m = self.mp.get_media()
@@ -281,7 +292,8 @@ def main():
             'unpause': lambda: c.unpause(),
             'play': lambda url: c.play(url),
             'set_volume': lambda volume: c.set_volume(volume),
-            'mute': lambda: c.mute(),
+            'set_position': lambda position: c.set_position(position),
+           'mute': lambda: c.mute(),
             'unmute': lambda: c.unmute(),
             'get_playback_information': lambda: c.get_playback_information(),
           }, os.environ.get('RPCSERVER_TOKEN')
