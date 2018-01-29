@@ -112,6 +112,28 @@ class DataviewVLCController(object):
 
         return True
 
+    def increase_volume(self, threshold):
+        """
+        Sets the volume for the current player instance
+        """
+        self.volume = self.volume + int(threshold)
+        self.mp.audio_set_volume(self.volume)
+        if self.volume > 100:
+          return False
+
+        return True
+
+    def decrease_volume(self, threshold):
+        """
+        Sets the volume for the current player instance
+        """
+        self.volume = self.volume - int(threshold)
+        if self.volume < 0:
+          return False
+
+        self.mp.audio_set_volume(self.volume)
+
+        return True
     def play(self, url):
         self.url = url
         m = vlc.Media(url)
@@ -292,8 +314,10 @@ def main():
             'unpause': lambda: c.unpause(),
             'play': lambda url: c.play(url),
             'set_volume': lambda volume: c.set_volume(volume),
+            'increase_volume': lambda offset: c.increase_volume(offset),
+            'decrease_volume': lambda offset: c.decrease_volume(offset),
             'set_position': lambda position: c.set_position(position),
-           'mute': lambda: c.mute(),
+            'mute': lambda: c.mute(),
             'unmute': lambda: c.unmute(),
             'get_playback_information': lambda: c.get_playback_information(),
           }, os.environ.get('RPCSERVER_TOKEN')
