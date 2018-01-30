@@ -9,6 +9,7 @@ import ssl
 import json
 from threading import Event, Thread
 import time
+import logging
 
 import asyncio
 import aiohttp
@@ -16,6 +17,8 @@ import aiohttp.server
 
 from urllib.parse import urlparse, parse_qsl
 from aiohttp.multidict import MultiDict
+
+logger = logging.getLogger(__name__)
 
 
 def constant_time_equals(val1, val2):
@@ -155,7 +158,13 @@ class DataviewVLCController(object):
         """
         Sets the position for the current player instance
         """
-        self.mp.set_time(int(position))
+        time = 1000 * int(position)
+
+        if time > self.mp.get_length():
+            return False
+        logger.info('seek to {}'.format(time))
+
+        self.mp.set_time(time)
 
         return True
 
@@ -292,6 +301,7 @@ ARGS.add_argument(
 
 def main():
     args = ARGS.parse_args()
+    logger.setLevel(logging.DEBUG)
 
     if ':' in args.host:
         args.host, port = args.host.split(':', 1)
