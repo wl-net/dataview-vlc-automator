@@ -44,6 +44,8 @@ class MonitorThread(Thread):
 
 
 class DataviewVLCController(object):
+    EQ_BANDS = {60, 170, 310, 600, 1000, 3000, 6000, 12000, 14000, 16000}
+
     def __init__(self):
         self.instance = vlc.Instance()
         self.mp = self.instance.media_player_new()
@@ -57,6 +59,7 @@ class DataviewVLCController(object):
         self.monitor = MonitorThread(self.monitor_stop_flag, self)
         self.url = None
         self.previously_played = []
+        self.eq = vlc.libvlc_audio_equalizer_new()
 
     def start_timers(self):
         if not self.monitor.is_alive() and not self.monitor_stop_flag.is_set():
@@ -171,6 +174,24 @@ class DataviewVLCController(object):
     def set_loop(self, status):
         self.instance.vlm_set_loop(self.url, status)
         return True
+
+    def get_equalizer(self):
+        result = {'bands': {}, 'preamp': vlc.libvlc_audio_equalizer_get_preamp(self.eq)}
+        for band in self.EQ_BANDS:
+            result['bands'][band]=vlc.libvlc_audio_equalizer_get_amp_at_index(self.eq, band)
+
+        return result
+
+    def set_equalizer(self, band, value):
+        if int(band) in self.EQ_BANDS:
+            vlc.libvlc_audio_equalizer_set_amp_at_index(self.eq, int(band), int(value))
+
+        vlc.libvlc_media_player_set_equalizer(self.mp, self.eq)
+
+    def set_equalizer_preamp(self, value):
+        vlc.libvlc_audio_equalizer_set_preamp(self.eq, int(value))
+
+        vlc.libvlc_media_player_set_equalizer(self.mp, self.eq)
 
     def mute(self):
         self.mp.audio_set_mute(True)
@@ -334,8 +355,12 @@ def main():
             'mute': lambda: c.mute(),
             'unmute': lambda: c.unmute(),
             'set_loop': lambda status: c.set_loop(status),
+            'get_equalizer': lambda: c.get_equalizer(),
+            'set_equalizer': lambda band, value: c.set_equalizer(band, value),
+            'set_equalizer_preamp': lambda value: c.set_equalizer_preamp(value),
+
            'get_playback_information': lambda: c.get_playback_information(),
-          }, os.environ.get('RPCSERVER_TOKEN')
+           }, os.environ.get('RPCSERVER_TOKEN')
         ),
         args.host, args.port,
         ssl = sslcontext)
