@@ -60,6 +60,7 @@ class DataviewVLCController(object):
         self.url = None
         self.previously_played = []
         self.eq = vlc.libvlc_audio_equalizer_new()
+        self.last_playback_length = None
 
     def start_timers(self):
         if not self.monitor.is_alive() and not self.monitor_stop_flag.is_set():
@@ -78,7 +79,8 @@ class DataviewVLCController(object):
         @return:
         """
         if not self.mp.get_media() or self.mp.get_media().get_meta(vlc.Meta.NowPlaying) is None:
-           self.play(self.url)
+            if self.last_playback_length and self.last_playback_length < self.mp.get_time():
+                self.play(self.url)
 
     def update_previous(self):
         if len(self.previously_played) >= 10:
@@ -109,6 +111,36 @@ class DataviewVLCController(object):
         self.mp.set_pause(0)
         return True
 
+    def next(self):
+        """
+        Pause the audio stream.
+        """
+        self.mlp.next()
+        return True
+
+    def previous(self):
+        """
+        Pause the audio stream.
+        """
+        self.mlp.previous()
+        return True
+
+
+    def list(self):
+      items = []
+
+      self.ml.lock()
+      for i in range(0, self.ml.count()):
+        self.ml.item_at_index(i).parse()
+        items.append(self.get_playback_details(self.ml.item_at_index(i)))
+      self.ml.unlock()
+
+      return items
+
+    def play_item(self, index):
+      self.mlp.play_item_at_index(int(index))
+
+      return True
     def set_volume(self, volume):
         """
         Sets the volume for the current player instance
@@ -140,9 +172,11 @@ class DataviewVLCController(object):
         self.mp.audio_set_volume(self.volume)
 
         return True
+
     def play(self, url):
         self.url = url
         m = vlc.Media(url)
+        m.parse()
 
         if self.mp.get_media() is None or self.mp.get_media().get_mrl() != m.get_mrl():
             self.ml.add_media(m)
@@ -150,6 +184,7 @@ class DataviewVLCController(object):
             self.mp.audio_set_volume(self.volume)
 
         self.start_timers()
+        self.last_playback_length = 0
 
         # hack to set the default volume
         while True:
@@ -209,12 +244,13 @@ class DataviewVLCController(object):
                                          'time': {'numeric': self.mp.get_time()},
                                          'is_playing': self.mp.is_playing()}}
 
-    def get_playback_details(self):
-         m = self.mp.get_media()
-         if m is None:
-             return {}
+    def get_playback_details(self, m=None):
+        if m is None:
+            m = self.mp.get_media()
+        if m is None:
+            return {}
 
-         return {'genre': m.get_meta(vlc.Meta.Genre),
+        return {'genre': m.get_meta(vlc.Meta.Genre),
                  'title': m.get_meta(vlc.Meta.Title),
                  'song': m.get_meta(vlc.Meta.NowPlaying)}
 
@@ -345,7 +381,8 @@ def main():
     c = DataviewVLCController();
     f = loop.create_server(
         lambda: DataviewRPCServer(
-          {'pause': lambda: c.pause(),
+          {
+            'pause': lambda: c.pause(),
             'unpause': lambda: c.unpause(),
             'play': lambda url: c.play(url),
             'set_volume': lambda volume: c.set_volume(volume),
@@ -354,12 +391,15 @@ def main():
             'set_position': lambda position: c.set_position(position),
             'mute': lambda: c.mute(),
             'unmute': lambda: c.unmute(),
+            'next': lambda: c.next(),
+            'previous': lambda: c.previous(),
+            'list': lambda: c.list(),
+            'play_item': lambda item: c.play_item(item),
             'set_loop': lambda status: c.set_loop(status),
             'get_equalizer': lambda: c.get_equalizer(),
             'set_equalizer': lambda band, value: c.set_equalizer(band, value),
             'set_equalizer_preamp': lambda value: c.set_equalizer_preamp(value),
-
-           'get_playback_information': lambda: c.get_playback_information(),
+            'get_playback_information': lambda: c.get_playback_information(),
            }, os.environ.get('RPCSERVER_TOKEN')
         ),
         args.host, args.port,
