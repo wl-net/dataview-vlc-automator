@@ -168,6 +168,10 @@ class DataviewVLCController(object):
 
         return True
 
+    def set_loop(self, status):
+        self.instance.vlm_set_loop(self.url, status)
+        return True
+
     def mute(self):
         self.mp.audio_set_mute(True)
         return True
@@ -329,7 +333,8 @@ def main():
             'set_position': lambda position: c.set_position(position),
             'mute': lambda: c.mute(),
             'unmute': lambda: c.unmute(),
-            'get_playback_information': lambda: c.get_playback_information(),
+            'set_loop': lambda status: c.set_loop(status),
+           'get_playback_information': lambda: c.get_playback_information(),
           }, os.environ.get('RPCSERVER_TOKEN')
         ),
         args.host, args.port,
